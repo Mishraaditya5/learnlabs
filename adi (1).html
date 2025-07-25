@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI MCQ Generator</title>
+  <style>
+    :root {
+      --primary: #10b981; /* Modern green theme */
+      --secondary: #059669;
+      --accent: #a7f3d0;
+      --background: #ecfdf5;
+      --text: #1e293b;
+      --border: #d1fae5;
+      --correct: #d4f8d4;
+      --correct-border: #4CAF50;
+      --incorrect: #ffdddd;
+      --incorrect-border: #f44336;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--background);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    h2 {
+      text-align: center;
+      color: var(--text);
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+    h3 {
+      color: var(--primary);
+      margin-top: 0;
+    }
+    input, select, button {
+      padding: 14px;
+      margin: 12px 0;
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      border: none;
+      box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2);
+    }
+    button:hover {
+      background: var(--secondary);
+      transform: translateY(-1px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button.secondary {
+      background: white;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+    .question-box, .analysis {
+      margin-top: 25px;
+    }
+    .options label {
+      display: block;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+    .options label:hover {
+      background: #ecfdf5;
+    }
+    .options label.selected {
+      background-color: var(--accent);
+      border-color: var(--primary);
+      font-weight: 500;
+    }
+    .options label.correct {
+      background-color: var(--correct);
+      border-color: var(--correct-border);
+    }
+    .options label.incorrect {
+      background-color: var(--incorrect);
+      border-color: var(--incorrect-border);
+    }
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      gap: 15px;
+    }
+    .navigation button {
+      flex: 1;
+    }
+    .analysis {
+      background: #e3f7e1;
+      padding: 25px;
+      border-radius: 12px;
+      border-left: 5px solid var(--primary);
+    }
+    .hidden {
+      display: none;
+    }
+    .loading {
+      text-align: center;
+      font-size: 18px;
+      color: #64748b;
+      margin-top: 30px;
+      padding: 20px;
+    }
+    .fadeOut {
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
+    }
+    #questionText {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-bottom: 25px;
+      overflow: hidden;
+    }
+    .progress {
+      height: 100%;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+    .timer {
+      text-align: right;
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+    .mode-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+    }
+    .explanation {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+    .bookmark-btn {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      box-shadow: none;
+      padding: 5px;
+      margin: 0;
+      width: auto;
+      font-size: 24px;
+    }
+    .bookmarked {
+      color: #f59e0b;
+    }
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .review-item {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border);
+    }
+    .review-correct {
+      color: #4CAF50;
+    }
+    .review-incorrect {
+      color: #f44336;
+    }
+    .math-equation {
+      font-size: 1.1em;
+      margin: 5px 0;
+    }
+  </style>
+  <!-- MathJax for rendering mathematical expressions -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>AI MCQ Generator</h2>
+    <div class="progress-bar hidden" id="progressBar">
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <div id="formSection">
+      <select id="classLevel">
+        <option value="">Select Class</option>
+        <option value="9">Class 9</option>
+        <option value="10">Class 10</option>
+        <option value="11">Class 11</option>
+        <option value="12">Class 12</option>
+      </select>
+      <input type="text" id="subject" placeholder="Enter Subject" />
+      <input type="text" id="topic" placeholder="Enter Topic" />
+      
+      <select id="difficulty">
+        <option value="medium">Medium Difficulty</option>
+        <option value="easy">Easy</option>
+        <option value="hard">Hard</option>
+      </select>
+      
+      <div class="mode-selector">
+        <button class="mode-btn secondary" onclick="setQuizMode('practice')">Practice Mode</button>
+        <button class="mode-btn" onclick="setQuizMode('timed')">Timed Mode</button>
+      </div>
+      
+      <div id="timedOptions" class="hidden">
+        <select id="timeLimit">
+          <option value="15">15 seconds per question</option>
+          <option value="30">30 seconds per question</option>
+          <option value="60">1 minute per question</option>
+          <option value="120">2 minutes per question</option>
+          <option value="300">5 minutes per question</option>
+        </select>
+      </div>
+      
+      <button onclick="generateMCQs()">Generate MCQs</button>
+    </div>
+
+    <div class="loading hidden" id="loadingBox">⏳ Loading questions, please wait...</div>
+
+    <div class="question-box hidden" id="questionBox">
+      <div class="question-header">
+        <div class="timer hidden" id="timer">Time left: 60s</div>
+        <button class="bookmark-btn" id="bookmarkBtn" onclick="toggleBookmark()">☆</button>
+      </div>
+      <div id="questionText"></div>
+      <div class="options" id="options"></div>
+      
+      <div class="explanation hidden" id="explanation"></div>
+      
+      <div class="navigation">
+        <button id="prevBtn" onclick="prevQuestion()" disabled>Previous</button>
+        <button id="nextBtn" onclick="nextQuestion()">Next</button>
+      </div>
+    </div>
+
+    <div class="analysis hidden" id="analysisBox"></div>
+    
+    <div class="hidden" id="reviewSection">
+      <h3>Question Review</h3>
+      <div id="reviewQuestions"></div>
+      <button onclick="showAnalysis()">Back to Summary</button>
+    </div>
+  </div>
+
+  <script>
+    let currentQuestion = 0;
+    let questions = [];
+    let userAnswers = [];
+    let startTime;
+    let quizMode = 'practice';
+    let timerInterval;
+    let timeLeft = 0;
+    let bookmarkedQuestions = [];
+    let questionExplanations = [];
+
+    function setQuizMode(mode) {
+      quizMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.remove('secondary');
+      });
+      if (mode === 'practice') {
+        document.querySelector('.mode-btn:nth-child(1)').classList.add('secondary');
+        document.getElementById('timedOptions').classList.add('hidden');
+      } else {
+        document.querySelector('.mode-btn:nth-child(2)').classList.add('secondary');
+        document.getElementById('timedOptions').classList.remove('hidden');
+      }
+    }
+
+    async function generateMCQs() {
+      const cls = document.getElementById("classLevel").value;
+      const subject = document.getElementById("subject").value;
+      const topic = document.getElementById("topic").value;
+      const difficulty = document.getElementById("difficulty").value;
+
+      if (!cls || !subject || !topic) {
+        alert("Please fill all required fields");
+        return;
+      }
+
+      // Hide form, show loader
+      document.getElementById("formSection").classList.add("fadeOut");
+      setTimeout(() => {
+        document.getElementById("formSection").classList.add("hidden");
+        document.getElementById("loadingBox").classList.remove("hidden");
+      }, 500);
+
+      // Special formatting for math subjects
+      const isMath = subject.toLowerCase().includes("math");
+      const mathFormatting = isMath ? 
+        "Format all math expressions using LaTeX between $ symbols like: $2^3 \\times 2^3 = 2^{6}$" : 
+        "";
+
+      const prompt = `Generate exactly 10 MCQs for Class ${cls} ${subject} on "${topic}" (${difficulty} level).
+Follow STRICTLY this format for EACH question:
+
+1. Question text ${mathFormatting}
+A) Option 1
+B) Option 2
+C) Option 3
+D) Option 4
+Answer: B
+Explanation: Concise reason (25 words max)
+
+EXAMPLE:
+1. What is $2^3 \\times 2^3$?
+A) $2^6$
+B) $2^9$
+C) $4^6$
+D) $4^3$
+Answer: A
+Explanation: When multiplying same bases, add exponents ($2^{3+3}=2^6$).
+
+NOW GENERATE 10 QUESTIONS:`;
+
+      try {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyB3UCzkIlFS1UJdC2by2y4KMQn4zddH1kY", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        parseMCQs(text, isMath);
+        
+        userAnswers = new Array(questions.length).fill(null);
+        bookmarkedQuestions = new Array(questions.length).fill(false);
+        startTime = Date.now();
+
+        document.getElementById("loadingBox").classList.add("hidden");
+        document.getElementById("progressBar").classList.remove("hidden");
+        updateProgress();
+        
+        if (quizMode === 'timed') {
+          timeLeft = parseInt(document.getElementById("timeLimit").value);
+          startTimer();
+        }
+        
+        showQuestion();
+      } catch (error) {
+        console.error("Error generating MCQs:", error);
+        document.getElementById("loadingBox").textContent = "Error generating questions. Please try again.";
+      }
+    }
+
+    function parseMCQs(text, isMath) {
+      // Remove all introductory text before first question
+      const cleanedText = text.replace(/^[\s\S]*?(?=\d+\.)/, '');
+      
+      const blocks = cleanedText.split(/\n(?=\d+\.)/).map(q => q.trim()).filter(Boolean);
+      questions = [];
+      questionExplanations = [];
+      
+      blocks.slice(0, 10).forEach(block => { // Take only first 10 questions
+        const lines = block.split('\n').filter(l => l.trim());
+        
+        // Skip malformed questions
+        if (lines.length < 7) return;
+
+        let question = lines[0].replace(/^\d+\.\s*/, '').trim();
+        
+        // Process options (next 4 lines)
+        const options = [];
+        for (let i = 1; i <= 4 && i < lines.length; i++) {
+          const optionMatch = lines[i].match(/^[A-D]\)\s*(.+)/);
+          if (optionMatch) options.push(optionMatch[1].trim());
+        }
+        
+        // Find answer and explanation
+        let correct, explanation = "No explanation provided";
+        for (let i = 5; i < lines.length; i++) {
+          if (lines[i].startsWith('Answer:')) {
+            const letter = lines[i].split(':')[1].trim().toUpperCase();
+            correct = options["ABCD".indexOf(letter)];
+          }
+          if (lines[i].startsWith('Explanation:')) {
+            explanation = lines[i].split(':').slice(1).join(':').trim();
+          }
+        }
+        
+        if (question && options.length === 4 && correct) {
+          // Clean up math formatting if needed
+          if (isMath) {
+            question = question.replace(/\$(.*?)\$/g, '<span class="math-equation">\\($1\\)</span>');
+            options.forEach((opt, i) => {
+              options[i] = opt.replace(/\$(.*?)\$/g, '<span class="math-equation">\\($1\\)</span>');
+            });
+            correct = correct.replace(/\$(.*?)\$/g, '<span class="math-equation">\\($1\\)</span>');
+          }
+          
+          questions.push({ question, options, correct });
+          questionExplanations.push(explanation);
+        }
+      });
+    }
+
+    function showQuestion() {
+      if (currentQuestion >= questions.length) {
+        showAnalysis();
+        return;
+      }
+      
+      document.getElementById("questionBox").classList.remove("hidden");
+      const q = questions[currentQuestion];
+      
+      document.getElementById("questionText").innerHTML = `Q${currentQuestion + 1}. ${q.question}`;
+      document.getElementById("bookmarkBtn").className = bookmarkedQuestions[currentQuestion] ? 
+        "bookmark-btn bookmarked" : "bookmark-btn";
+      document.getElementById("bookmarkBtn").innerHTML = bookmarkedQuestions[currentQuestion] ? "★" : "☆";
+      
+      const opts = document.getElementById("options");
+      opts.innerHTML = "";
+      q.options.forEach((opt, i) => {
+        const selected = userAnswers[currentQuestion] === opt ? "selected" : "";
+        opts.innerHTML += `
+          <label class="${selected}" onclick="selectOption('${opt.replace(/'/g, "\\'")}', this)">
+            ${opt}
+          </label>`;
+      });
+
+      document.getElementById("prevBtn").disabled = currentQuestion < 1;
+      document.getElementById("nextBtn").textContent = currentQuestion === questions.length - 1 ? "Finish" : "Next";
+      document.getElementById("explanation").classList.add("hidden");
+      
+      // Render MathJax if available
+      if (typeof MathJax !== 'undefined') {
+        MathJax.typesetPromise();
+      }
+      
+      updateProgress();
+    }
+
+    function selectOption(opt, label) {
+      userAnswers[currentQuestion] = opt;
+      const allLabels = document.querySelectorAll("#options label");
+      allLabels.forEach(l => l.classList.remove("selected"));
+      label.classList.add("selected");
+      
+      if (quizMode === 'practice') {
+        showExplanation();
+      }
+    }
+
+    function showExplanation() {
+      const explanationEl = document.getElementById("explanation");
+      explanationEl.innerHTML = questionExplanations[currentQuestion];
+      explanationEl.classList.remove("hidden");
+      
+      const correctAnswer = questions[currentQuestion].correct;
+      const userAnswer = userAnswers[currentQuestion];
+      const allLabels = document.querySelectorAll("#options label");
+      
+      allLabels.forEach(label => {
+        if (label.textContent === correctAnswer) {
+          label.classList.add("correct");
+        } else if (label.textContent === userAnswer && userAnswer !== correctAnswer) {
+          label.classList.add("incorrect");
+        }
+      });
+      
+      // Re-render MathJax for explanation
+      if (typeof MathJax !== 'undefined') {
+        MathJax.typesetPromise();
+      }
+    }
+
+    function toggleBookmark() {
+      bookmarkedQuestions[currentQuestion] = !bookmarkedQuestions[currentQuestion];
+      document.getElementById("bookmarkBtn").className = bookmarkedQuestions[currentQuestion] ? 
+        "bookmark-btn bookmarked" : "bookmark-btn";
+      document.getElementById("bookmarkBtn").innerHTML = bookmarkedQuestions[currentQuestion] ? "★" : "☆";
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        showQuestion();
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        if (quizMode === 'timed') {
+          resetTimer();
+        }
+        showQuestion();
+      } else {
+        if (quizMode === 'timed') {
+          clearInterval(timerInterval);
+        }
+        showAnalysis();
+      }
+    }
+
+    function startTimer() {
+      document.getElementById("timer").classList.remove("hidden");
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          if (currentQuestion < questions.length - 1) {
+            currentQuestion++;
+            resetTimer();
+            showQuestion();
+          } else {
+            showAnalysis();
+          }
+        }
+      }, 1000);
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timeLeft = parseInt(document.getElementById("timeLimit").value);
+      startTimer();
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      document.getElementById("timer").textContent = 
+        `Time left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
+    function updateProgress() {
+      const progress = ((currentQuestion) / questions.length) * 100;
+      document.getElementById("progress").style.width = `${progress}%`;
+    }
+
+    function showAnalysis() {
+      let correct = 0;
+      questions.forEach((q, i) => {
+        if (userAnswers[i] === q.correct) correct++;
+      });
+      const total = questions.length;
+      const wrong = total - correct;
+      const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+      const accuracy = ((correct / total) * 100).toFixed(2);
+
+      let advice = "";
+      if (correct <= 1) advice = "You need to revise the basics thoroughly.";
+      else if (correct <= 3) advice = "Revise concepts and practice more questions.";
+      else if (correct <= 5) advice = "Good effort, but practice more for mastery.";
+      else if (correct <= 8) advice = "Well done! You have a good grip.";
+      else advice = "Excellent! You're ready for any challenge.";
+
+      document.getElementById("questionBox").classList.add("hidden");
+      const analysis = document.getElementById("analysisBox");
+      analysis.classList.remove("hidden");
+      analysis.innerHTML = `
+        <h3>📊 Quiz Summary</h3>
+        <p><strong>Total Questions:</strong> ${total}</p>
+        <p><strong>Correct Answers:</strong> ${correct}</p>
+        <p><strong>Wrong Answers:</strong> ${wrong}</p>
+        <p><strong>Time Taken:</strong> ${timeTaken} seconds</p>
+        <p><strong>Accuracy:</strong> ${accuracy}%</p>
+        <p><strong>Advice:</strong> ${advice}</p>
+        
+        <div style="margin-top: 20px;">
+          <button onclick="showReview()">Review Questions</button>
+          <button class="secondary" onclick="restartQuiz()">Start New Quiz</button>
+        </div>
+      `;
+    }
+
+    function showReview() {
+      document.getElementById("analysisBox").classList.add("hidden");
+      const reviewSection = document.getElementById("reviewSection");
+      reviewSection.classList.remove("hidden");
+      
+      let reviewHTML = '';
+      questions.forEach((q, i) => {
+        const isCorrect = userAnswers[i] === q.correct;
+        reviewHTML += `
+          <div class="review-item">
+            <p><strong>Q${i + 1}:</strong> ${q.question}</p>
+            <p class="${isCorrect ? 'review-correct' : 'review-incorrect'}">
+              Your answer: ${userAnswers[i] || 'Not answered'} 
+              ${isCorrect ? '✓' : `✗ (Correct: ${q.correct})`}
+            </p>
+            <p><strong>Explanation:</strong> ${questionExplanations[i]}</p>
+            ${bookmarkedQuestions[i] ? '<p>🔖 Bookmarked</p>' : ''}
+          </div>
+        `;
+      });
+      
+      document.getElementById("reviewQuestions").innerHTML = reviewHTML;
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      document.getElementById("analysisBox").classList.add("hidden");
+      document.getElementById("reviewSection").classList.add("hidden");
+      document.getElementById("formSection").classList.remove("hidden");
+      document.getElementById("formSection").classList.remove("fadeOut");
+      document.getElementById("progressBar").classList.add("hidden");
+      
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    }
+  </script>
+</body>
+</html>
